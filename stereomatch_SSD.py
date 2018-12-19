@@ -7,6 +7,7 @@
 # Licensed under the MIT License
 import numpy as np
 from PIL import Image
+import sys,time#为了打印进度条
 
 def stereo_match(left_img, right_img, kernel, max_offset):
     # Load in both images, assumed to be RGBA 8bit per channel images
@@ -24,7 +25,13 @@ def stereo_match(left_img, right_img, kernel, max_offset):
     offset_adjust = 255 / max_offset  # this is used to map depth map output to 0-255 range
       
     for y in range(kernel_half, h - kernel_half):      
-        print ".",  # let the user know that something is happening (slowly!)
+        i=int(100*y/(h-2*kernel_half))
+        k = i + 1
+        str = '■'*(i//2)+' '*((100-k)//2)
+        sys.stdout.write('\r'+str+'[%s%%]'%(i+1))
+        sys.stdout.flush()
+        time.sleep(0.1)
+        #print (100*y/(h-2*kernel_half),"%")  # let the user know that something is happening (slowly!)
         
         for x in range(kernel_half, w - kernel_half):
             best_offset = 0
@@ -57,6 +64,7 @@ def stereo_match(left_img, right_img, kernel, max_offset):
                                 
     # Convert to PIL and save it
     Image.fromarray(depth).save('depth.png')
+    print ("The depth image is done!!!")
 
 if __name__ == '__main__':
     stereo_match("view0.png", "view1.png", 6, 30)  # 6x6 local search kernel, 30 pixel search range
