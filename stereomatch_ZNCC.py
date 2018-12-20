@@ -74,8 +74,8 @@ def stereo_match(left_img, right_img, kernel, max_offset):
                 #------------------------MY CODE-------------------------------------
                         zncc_up_temp = int((left[y+v, x+u])-left_eq) * int((right[y+v, (x+u) - offset])-right_eq)  
                         zncc_up += zncc_up_temp
-                        zncc_down_temp1 += (int(left[y+v, x+u])-int(left_eq))*(int(left[y+v, x+u])-int(left_eq))
-                        zncc_down_temp2 += (int(right[y+v, (x+u) - offset])-int(right_eq))* (int(right[y+v, (x+u) - offset])-int(right_eq))
+                        zncc_down_temp1 += int((left[y+v, x+u])-(left_eq))*int((left[y+v, x+u])-(left_eq))
+                        zncc_down_temp2 += int((right[y+v, (x+u) - offset])-(right_eq))* int((right[y+v, (x+u) - offset])-(right_eq))
                         zncc_down = math.sqrt(zncc_down_temp1*zncc_down_temp2)
                         if zncc_down == 0:
                             zncc = 1
