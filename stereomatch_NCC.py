@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # --------------------------------------------------------------------
-# Simple sum of squared differences (SSD) stereo-matching using Numpy
+# Simple sum of squared differences (NCC) stereo-matching using Numpy
 # --------------------------------------------------------------------
 
-# Copyright (c) 2016 David Christian
-# Licensed under the MIT License
+# Copyright (c) 2018 King
+# Licensed under the UCAS License
 #--------------------------------------------------------------------
 #中文注释为我添加的注释
 #--------------------------------------------------------------------
 import numpy as np
+import math
 from PIL import Image
 import sys,time#为了打印进度条
 
@@ -29,9 +30,9 @@ def stereo_match(left_img, right_img, kernel, max_offset):
     
     #---------------MY CODE-------------------------------
     for y in range(kernel_half, h - kernel_half):      
-        i=int(100*y/(h-2*kernel_half))
+        i=int(100*(y-kernel_half)/(h-2*kernel_half))
         k = i + 1
-        str = '■'*(i//2)+' '*((100-k)//2)
+        str ="[KING-NCC]" + '■'*(i//2)+' '*((100-k)//2)
         sys.stdout.write('\r'+str+'[%s%%]'%(i+1))
         sys.stdout.flush()
         time.sleep(0.1)
@@ -40,11 +41,15 @@ def stereo_match(left_img, right_img, kernel, max_offset):
         
         for x in range(kernel_half, w - kernel_half):#和28行构成对基准图像的遍历
             best_offset = 0 #最佳偏移为0
-            prev_ssd = 65534 #256*256
+            prev_ncc = -1 #归一化算法，-1为不相关
             
             for offset in range(max_offset):  #极线搜索           
-                ssd = 0 #初始化
-                ssd_temp = 0   #初始化                         
+                ncc_up_temp = 0
+                ncc_up = 0
+                ncc_down_temp1 = 0
+                ncc_down_temp2 = 0
+                ncc_down = 0
+                ncc = 0                       
                 
                 # v and u are the x,y of our local window search, used to ensure a good 
                 # match- going by the squared differences of two pixels alone is insufficient, 
@@ -54,22 +59,30 @@ def stereo_match(left_img, right_img, kernel, max_offset):
                         # iteratively sum the sum of squared differences value for this block
                         # left[] and right[] are arrays of uint8, so converting them to int saves
                         # potential overflow, and executes a lot faster 
-                        ssd_temp = int(left[y+v, x+u]) - int(right[y+v, (x+u) - offset])  
-                        ssd += ssd_temp * ssd_temp              
-                        #这是ssd的平方差公式
+                
+                #------------------------MY CODE-------------------------------------
+                        ncc_up_temp = int(left[y+v, x+u]) * int(right[y+v, (x+u) - offset])  
+                        ncc_up += ncc_up_temp
+                        ncc_down_temp1 += int(left[y+v, x+u])*int(left[y+v, x+u])
+                        ncc_down_temp2 += int(right[y+v, (x+u) - offset])*int(right[y+v, (x+u) - offset]) 
+                        ncc_down = math.sqrt(ncc_down_temp1*ncc_down_temp2)
+                        ncc = ncc_up/ncc_down             
+                        #这是NCC算法的公式
+                #----------------------------------------------------------------------
                 # if this value is smaller than the previous ssd at this block
                 # then it's theoretically a closer match. Store this value against
                 # this block..
-                if ssd < prev_ssd:
-                    prev_ssd = ssd
+                if ncc > prev_ncc:
+                    prev_ncc = ncc
                     best_offset = offset
                     #寻找最小offset
             # set depth output for this x,y location to the best match
             depth[y, x] = best_offset * offset_adjust #深度图像矩阵形成
                                 
     # Convert to PIL and save it
-    Image.fromarray(depth).save('depth.png')
-    print ("The depth image is done!!!")
+    Image.fromarray(depth).save('depth_ncc.png')
+    print('\n')
+    print ("[KING-NCC]The depth image is done!!!")
 
 if __name__ == '__main__':
     stereo_match("view0.png", "view1.png", 6, 30)  # 6x6 local search kernel, 30 pixel search range
